@@ -99,7 +99,11 @@ class TrelloManager:
                 return label["id"]
         
         # Create new label
-        return self.create_label(name, color)
+        label_id = self.create_label(name, color)
+        if label_id:
+            # Refresh labels cache
+            self._labels_cache = None
+        return label_id
 
     def get_list_by_name(self, list_name: str) -> Optional[str]:
         """Get list ID by name."""
@@ -141,12 +145,15 @@ class TrelloManager:
                 label_ids = []
                 for label_name in labels:
                     label_id = self.get_or_create_label(label_name)
-                    if label_id:
+                    if label_id and isinstance(label_id, str):
                         label_ids.append(label_id)
                 
                 if label_ids:
                     for label_id in label_ids:
-                        card.add_label(label_id)
+                        try:
+                            card.add_label(label_id)
+                        except Exception as e:
+                            print(f"Warning: Could not add label {label_id}: {e}")
             
             return {
                 "id": card.id,
@@ -173,8 +180,9 @@ class TrelloManager:
             elif "enhancement" in [label.lower() for label in issue.get("labels", [])]:
                 list_name = "Enhancements"
             
-            # Create labels
-            labels = [repo_name] + issue.get("labels", [])
+            # Create labels (use just the repo name, not full path)
+            repo_label = repo_name.split('/')[-1] if '/' in repo_name else repo_name
+            labels = [repo_label] + issue.get("labels", [])
             
             # Create description
             description = f"""
@@ -215,8 +223,9 @@ class TrelloManager:
             elif issue.get("severity") == "critical":
                 list_name = "Critical"
             
-            # Create labels
-            labels = [repo_name, issue.get("type", "analysis"), issue.get("severity", "medium")]
+            # Create labels (use just the repo name, not full path)
+            repo_label = repo_name.split('/')[-1] if '/' in repo_name else repo_name
+            labels = [repo_label, issue.get("type", "analysis"), issue.get("severity", "medium")]
             
             # Create description
             description = f"""
@@ -244,7 +253,9 @@ class TrelloManager:
         
         # Create cards for suggestions
         for suggestion in analysis.get("suggestions", []):
-            labels = [repo_name, "suggestion", suggestion.get("type", "improvement")]
+            # Create labels (use just the repo name, not full path)
+            repo_label = repo_name.split('/')[-1] if '/' in repo_name else repo_name
+            labels = [repo_label, "suggestion", suggestion.get("type", "improvement")]
             
             description = f"""
 **Code Analysis Suggestion**
@@ -293,7 +304,9 @@ class TrelloManager:
 **Repository URL:** {repo_info.get('url', 'N/A')}
         """.strip()
         
-        labels = [repo_info.get('full_name', 'repo'), "summary", score_color]
+        # Use repository name without slash for label
+        repo_label = repo_info.get('name', 'repo')
+        labels = [repo_label, "summary", score_color]
         
         return self.create_card(
             title=f"Analysis Summary: {repo_info.get('name', 'Repository')}",
