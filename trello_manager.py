@@ -145,7 +145,8 @@ class TrelloManager:
                         label_ids.append(label_id)
                 
                 if label_ids:
-                    card.add_labels(label_ids)
+                    for label_id in label_ids:
+                        card.add_label(label_id)
             
             return {
                 "id": card.id,
