@@ -5,6 +5,7 @@ This module handles Trello API interactions for creating and managing tasks.
 """
 
 import os
+import re
 from typing import Dict, List, Optional, Any
 from trello import TrelloClient
 from trello.exceptions import ResourceUnavailable
@@ -14,17 +15,36 @@ class TrelloManager:
     def __init__(self, api_key: str, token: str, board_id: str):
         """Initialize Trello manager with API credentials."""
         self.client = TrelloClient(api_key=api_key, token=token)
-        self.board_id = board_id
-        self.board = self.client.get_board(board_id)
+        self.board_id = self._extract_board_id(board_id)
+        
+        try:
+            self.board = self.client.get_board(self.board_id)
+        except ResourceUnavailable as e:
+            print(f"Warning: Could not access Trello board: {e}")
+            self.board = None
         
         # Cache for lists and labels
         self._lists_cache = None
         self._labels_cache = None
 
+    def _extract_board_id(self, board_id: str) -> str:
+        """Extract board ID from various formats."""
+        # If it's a full URL, extract the ID
+        if board_id.startswith('http'):
+            # Extract ID from URL like https://trello.com/b/Diz3GQos/mcp-practice
+            match = re.search(r'/b/([a-zA-Z0-9]+)', board_id)
+            if match:
+                return match.group(1)
+        
+        # If it's already just the ID, return as is
+        return board_id
+
     def get_lists(self) -> List[Dict[str, Any]]:
         """Get all lists from the board."""
         if self._lists_cache is None:
             try:
+                if not self.board:
+                    return []
                 lists = self.board.list_lists()
                 self._lists_cache = [
                     {
@@ -42,6 +62,8 @@ class TrelloManager:
         """Get all labels from the board."""
         if self._labels_cache is None:
             try:
+                if not self.board:
+                    return []
                 labels = self.board.get_labels()
                 self._labels_cache = [
                     {
@@ -58,6 +80,8 @@ class TrelloManager:
     def create_label(self, name: str, color: str = "blue") -> Optional[str]:
         """Create a new label on the board."""
         try:
+            if not self.board:
+                return None
             label = self.board.add_label(name, color)
             # Refresh labels cache
             self._labels_cache = None
@@ -93,6 +117,10 @@ class TrelloManager:
                    due_date: str = None) -> Optional[Dict[str, Any]]:
         """Create a new card in the specified list."""
         try:
+            if not self.board:
+                print("Warning: Trello board not accessible")
+                return None
+                
             # Get list
             list_id = self.get_list_by_name(list_name)
             if not list_id:
