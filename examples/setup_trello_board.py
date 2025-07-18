@@ -6,6 +6,10 @@ This script sets up your Trello board with the necessary lists and labels for th
 
 import os
 from dotenv import load_dotenv
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
 from trello import TrelloClient
 from trello.exceptions import ResourceUnavailable
 

@@ -70,28 +70,74 @@ TRELLO_BOARD_ID=your_trello_board_id
 ### 4. Run the MCP Server
 
 ```bash
-python mcp_server.py
+# Using the main script
+python main.py server
+
+# Or using make
+make run-server
 ```
 
 ## Usage
+
+### Quick Start
+
+```bash
+# Run the full workflow on your repository
+python main.py workflow
+
+# Or use make
+make run-workflow
+
+# Run a quick test
+python main.py test
+
+# Set up Trello board
+python main.py setup-trello
+```
+
+### Available Commands
+
+- `python main.py server` - Start the MCP server
+- `python main.py workflow [repo]` - Run full workflow analysis
+- `python main.py test` - Run quick test
+- `python main.py setup-trello` - Set up Trello board
+
+### MCP Server Tools
 
 The MCP server provides the following tools:
 
 - `analyze_repository`: Analyzes a GitHub repository and creates Trello tasks
 - `list_repositories`: Lists repositories for a GitHub user/organization
 - `get_repository_info`: Gets detailed information about a specific repository
+- `create_trello_card`: Create a single Trello card
 
 ## Project Structure
 
 ```
 mcp_tests/
-├── mcp_server.py          # Main MCP server implementation
-├── github_analyzer.py     # GitHub repository analysis logic
-├── trello_manager.py      # Trello task creation and management
-├── code_analyzer.py       # Code quality and issue detection
-├── requirements.txt       # Python dependencies
-├── .env.example          # Example environment variables
-└── README.md             # This file
+├── src/                   # Source code
+│   ├── analyzers/         # Analysis modules
+│   │   ├── github_analyzer.py
+│   │   └── code_analyzer.py
+│   ├── managers/          # External service managers
+│   │   └── trello_manager.py
+│   ├── utils/             # Utility functions
+│   └── mcp_server.py      # Main MCP server
+├── tests/                 # Test files
+│   ├── quick_test.py
+│   ├── direct_test.py
+│   └── test_my_repo.py
+├── examples/              # Example scripts
+│   ├── run_full_mcp_workflow.py
+│   ├── setup_trello_board.py
+│   └── example_client.py
+├── docs/                  # Documentation
+├── main.py               # Main entry point
+├── config.py             # Configuration settings
+├── Makefile              # Build and development tasks
+├── requirements.txt      # Python dependencies
+├── .env.example         # Example environment variables
+└── README.md            # This file
 ```
 
 ## Example Workflow

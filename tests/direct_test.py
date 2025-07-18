@@ -7,9 +7,13 @@ This script tests the core functionality directly without going through the MCP 
 import os
 import asyncio
 from dotenv import load_dotenv
-from github_analyzer import GitHubAnalyzer
-from trello_manager import TrelloManager
-from code_analyzer import CodeAnalyzer
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from analyzers.github_analyzer import GitHubAnalyzer
+from managers.trello_manager import TrelloManager
+from analyzers.code_analyzer import CodeAnalyzer
 
 # Load environment variables
 load_dotenv()

@@ -6,8 +6,12 @@ This script quickly tests the essential functionality.
 
 import os
 from dotenv import load_dotenv
-from github_analyzer import GitHubAnalyzer
-from trello_manager import TrelloManager
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from analyzers.github_analyzer import GitHubAnalyzer
+from managers.trello_manager import TrelloManager
 
 # Load environment variables
 load_dotenv()

@@ -25,9 +25,9 @@ from mcp.types import (
     EmbeddedResource,
 )
 
-from github_analyzer import GitHubAnalyzer
-from trello_manager import TrelloManager
-from code_analyzer import CodeAnalyzer
+from .analyzers.github_analyzer import GitHubAnalyzer
+from .managers.trello_manager import TrelloManager
+from .analyzers.code_analyzer import CodeAnalyzer
 
 # Load environment variables
 load_dotenv()
