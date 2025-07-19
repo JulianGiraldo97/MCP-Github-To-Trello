@@ -18,6 +18,10 @@ TRELLO_API_KEY = os.getenv("TRELLO_API_KEY")
 TRELLO_TOKEN = os.getenv("TRELLO_TOKEN")
 TRELLO_BOARD_ID = os.getenv("TRELLO_BOARD_ID")
 
+# AI API Keys
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
 # Default settings
 DEFAULT_REPO = "JulianGiraldo97/practica-docker-microservices"
 MAX_FILES_TO_ANALYZE = 50

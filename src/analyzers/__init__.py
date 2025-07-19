@@ -5,6 +5,6 @@ Contains modules for analyzing GitHub repositories and code quality.
 """
 
 from .github_analyzer import GitHubAnalyzer
-from .code_analyzer import CodeAnalyzer
+from .ai_analyzer import AIAnalyzer, AIAnalysisResult
 
-__all__ = ['GitHubAnalyzer', 'CodeAnalyzer'] 
+__all__ = ['GitHubAnalyzer', 'AIAnalyzer', 'AIAnalysisResult'] 

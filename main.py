@@ -38,6 +38,15 @@ def setup_trello():
     from setup_trello_board import setup_trello_board
     setup_trello_board()
 
+def test_ai():
+    """Test AI analysis functionality."""
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'examples'))
+    from test_ai_analysis import test_ai_analysis, test_specific_file_analysis
+    
+    print("🤖 Testing AI Analysis...")
+    test_ai_analysis()
+    test_specific_file_analysis()
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(
@@ -50,19 +59,20 @@ Examples:
   python main.py workflow owner/repo       # Run workflow on specific repo
   python main.py test                      # Run quick test
   python main.py setup-trello              # Set up Trello board
+  python main.py ai-test                   # Test AI analysis functionality
         """
     )
     
     parser.add_argument(
         'command',
-        choices=['server', 'workflow', 'test', 'setup-trello'],
+        choices=['server', 'workflow', 'test', 'setup-trello', 'ai-test'],
         help='Command to run'
     )
     
     parser.add_argument(
         'repo_name',
         nargs='?',
-        default="JulianGiraldo97/practica-docker-microservices",
+        default="JulianGiraldo97/taller-devops-maestria",
         help='Repository name (for workflow command)'
     )
     
@@ -80,6 +90,9 @@ Examples:
     elif args.command == 'setup-trello':
         print("🔧 Setting up Trello board...")
         setup_trello()
+    elif args.command == 'ai-test':
+        print("🤖 Testing AI analysis...")
+        test_ai()
 
 if __name__ == "__main__":
     main() 

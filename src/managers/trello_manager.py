@@ -145,7 +145,7 @@ class TrelloManager:
                 label_ids = []
                 for label_name in labels:
                     label_id = self.get_or_create_label(label_name)
-                    if label_id and isinstance(label_id, str):
+                    if label_id is not None:
                         label_ids.append(label_id)
                 
                 if label_ids:

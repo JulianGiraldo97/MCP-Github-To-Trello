@@ -17,7 +17,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from analyzers.github_analyzer import GitHubAnalyzer
 from managers.trello_manager import TrelloManager
-from analyzers.code_analyzer import CodeAnalyzer
+from analyzers.ai_analyzer import AIAnalyzer
 
 # Load environment variables
 load_dotenv()
@@ -46,7 +46,12 @@ def run_full_mcp_workflow(repo_name="JulianGiraldo97/practica-docker-microservic
         print("🔧 Initializing components...")
         github_analyzer = GitHubAnalyzer(github_token)
         trello_manager = TrelloManager(trello_api_key, trello_token, trello_board_id)
-        code_analyzer = CodeAnalyzer()
+        
+        # Initialize AI analyzer
+        ai_analyzer = AIAnalyzer(
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")
+        )
         
         print(f"✅ Components initialized")
         print(f"📊 Target repository: {repo_name}")
@@ -106,16 +111,59 @@ def run_full_mcp_workflow(repo_name="JulianGiraldo97/practica-docker-microservic
         print(f"   Issues Found: {len(code_quality.get('issues', []))}")
         print(f"   Suggestions: {len(code_quality.get('suggestions', []))}")
         
-        # Step 5: Perform detailed code analysis
-        print("\n🔍 Performing detailed code analysis...")
-        code_analysis = code_analyzer.analyze_repository_files(repo, max_files=50)
-        print("✅ Detailed code analysis completed!")
-        print(f"   Files Analyzed: {code_analysis.get('analyzed_files', 0)}")
-        print(f"   Total Files Found: {code_analysis.get('total_files_found', 0)}")
-        print(f"   Code Issues Found: {len(code_analysis.get('issues', []))}")
-        print(f"   Code Suggestions: {len(code_analysis.get('suggestions', []))}")
+        # Step 5: Perform AI-powered code analysis
+        print("\n🤖 Performing AI-powered code analysis...")
         
-        # Step 6: Get recent issues and commits
+        # Initialize combined_analysis with basic results
+        combined_analysis = {
+            "issues": code_quality.get("issues", []),
+            "suggestions": code_quality.get("suggestions", []),
+            "score": code_quality.get("score", 70),
+            "ai_scores": {"code_quality": 70, "security": 70, "maintainability": 70},
+            "ai_analysis": "AI analysis was not available.",
+            "files_analyzed": 0
+        }
+        
+        try:
+            # Get sample files for AI analysis
+            sample_files = []
+            contents = repo.get_contents("")
+            
+            # Collect files for analysis (limit to 15 files for cost efficiency)
+            for content in contents[:15]:
+                if hasattr(content, 'content'):  # It's a file, not a directory
+                    sample_files.append({
+                        'path': content.path,
+                        'language': content.name.split('.')[-1] if '.' in content.name else 'unknown'
+                    })
+            
+            print(f"📁 Found {len(sample_files)} files for AI analysis")
+            
+            ai_analysis = ai_analyzer.analyze_repository_with_ai(repo, sample_files)
+            print("✅ AI analysis completed!")
+            print(f"   AI Issues Found: {len(ai_analysis.issues)}")
+            print(f"   AI Suggestions: {len(ai_analysis.suggestions)}")
+            print(f"   Code Quality Score: {ai_analysis.code_quality_score}/100")
+            print(f"   Security Score: {ai_analysis.security_score}/100")
+            print(f"   Maintainability Score: {ai_analysis.maintainability_score}/100")
+            
+            # Use AI analysis as the primary analysis
+            combined_analysis["issues"] = ai_analysis.issues
+            combined_analysis["suggestions"] = ai_analysis.suggestions
+            combined_analysis["score"] = (ai_analysis.code_quality_score + ai_analysis.security_score + ai_analysis.maintainability_score) // 3
+            combined_analysis["ai_scores"] = {
+                "code_quality": ai_analysis.code_quality_score,
+                "security": ai_analysis.security_score,
+                "maintainability": ai_analysis.maintainability_score
+            }
+            combined_analysis["ai_analysis"] = ai_analysis.detailed_analysis
+            combined_analysis["files_analyzed"] = len(sample_files)
+            
+        except Exception as e:
+            print(f"⚠️  AI analysis failed: {e}")
+            print("   Using basic structural analysis only...")
+        
+        # Step 7: Get recent issues and commits
         print("\n📋 Getting recent GitHub issues...")
         try:
             recent_issues = github_analyzer.get_recent_issues(repo, limit=10)
@@ -132,23 +180,17 @@ def run_full_mcp_workflow(repo_name="JulianGiraldo97/practica-docker-microservic
             print(f"⚠️  Could not fetch commits: {e}")
             recent_commits = []
         
-        # Step 7: Combine all analysis results
+        # Step 8: Combine all analysis results
         print("\n" + "="*50)
         print("STEP 3: Combining Analysis Results")
         print("="*50)
-        
-        combined_analysis = {
-            "issues": code_quality.get("issues", []) + code_analysis.get("issues", []),
-            "suggestions": code_quality.get("suggestions", []) + code_analysis.get("suggestions", []),
-            "score": code_quality.get("score", 100)
-        }
         
         print(f"✅ Analysis combined!")
         print(f"   Total Issues: {len(combined_analysis['issues'])}")
         print(f"   Total Suggestions: {len(combined_analysis['suggestions'])}")
         print(f"   Final Score: {combined_analysis['score']}/100")
         
-        # Step 8: Create Trello cards
+        # Step 9: Create Trello cards
         print("\n" + "="*50)
         print("STEP 4: Creating Trello Cards")
         print("="*50)
@@ -169,7 +211,7 @@ def run_full_mcp_workflow(repo_name="JulianGiraldo97/practica-docker-microservic
         else:
             print("⚠️  Could not create summary card")
         
-        # Step 9: Final summary
+        # Step 10: Final summary
         print("\n" + "="*50)
         print("STEP 5: Final Summary")
         print("="*50)
@@ -180,9 +222,19 @@ def run_full_mcp_workflow(repo_name="JulianGiraldo97/practica-docker-microservic
         print(f"   Quality Score: {combined_analysis['score']}/100")
         print(f"   Issues Found: {len(combined_analysis['issues'])}")
         print(f"   Suggestions: {len(combined_analysis['suggestions'])}")
-        print(f"   Files Analyzed: {code_analysis.get('analyzed_files', 0)}")
+        print(f"   Files Analyzed: {combined_analysis.get('files_analyzed', 0)}")
         print(f"   Recent Issues: {len(recent_issues)}")
         print(f"   Recent Commits: {len(recent_commits)}")
+        
+        # Show AI analysis results if available
+        if combined_analysis.get('ai_scores'):
+            print("\n🤖 AI Analysis Results:")
+            ai_scores = combined_analysis['ai_scores']
+            print(f"   Code Quality Score: {ai_scores.get('code_quality', 70)}/100")
+            print(f"   Security Score: {ai_scores.get('security', 70)}/100")
+            print(f"   Maintainability Score: {ai_scores.get('maintainability', 70)}/100")
+            print(f"   AI Issues Found: {len(combined_analysis.get('ai_issues', []))}")
+            print(f"   AI Suggestions: {len(combined_analysis.get('ai_suggestions', []))}")
         
         print("\n📋 Trello Integration Summary")
         print(f"   Analysis Cards Created: {len(analysis_cards)}")

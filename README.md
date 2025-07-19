@@ -12,7 +12,9 @@ The system performs the following workflow:
 ## Features
 
 - **GitHub Integration**: Fetches repository information, code files, and issues
-- **Code Analysis**: Identifies potential problems in the codebase
+- **AI-Powered Code Analysis**: Uses OpenAI GPT-4 and Anthropic Claude for intelligent code review
+- **Advanced Security Analysis**: Detects vulnerabilities, security issues, and best practices
+- **Code Quality Assessment**: Evaluates maintainability, performance, and architecture
 - **Trello Integration**: Creates organized tasks with proper categorization
 - **MCP Server**: Exposes functionality through the Model Context Protocol
 
@@ -54,6 +56,10 @@ GITHUB_TOKEN=your_github_token_here
 TRELLO_API_KEY=your_trello_api_key
 TRELLO_TOKEN=your_trello_token
 TRELLO_BOARD_ID=your_trello_board_id
+
+# AI API Keys (Optional - for enhanced analysis)
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
 
 ### 3. Get API Keys
@@ -66,6 +72,10 @@ TRELLO_BOARD_ID=your_trello_board_id
 1. Go to https://trello.com/app-key
 2. Get your API key and token
 3. Create a board and note its ID from the URL
+
+**AI APIs (Optional - for enhanced analysis):**
+1. **OpenAI**: Get API key from https://platform.openai.com/api-keys
+2. **Anthropic**: Get API key from https://console.anthropic.com/
 
 ### 4. Run the MCP Server
 
@@ -101,6 +111,7 @@ python main.py setup-trello
 - `python main.py workflow [repo]` - Run full workflow analysis
 - `python main.py test` - Run quick test
 - `python main.py setup-trello` - Set up Trello board
+- `python main.py ai-test` - Test AI analysis functionality
 
 ### MCP Server Tools
 
@@ -118,7 +129,7 @@ mcp_tests/
 ├── src/                   # Source code
 │   ├── analyzers/         # Analysis modules
 │   │   ├── github_analyzer.py
-│   │   └── code_analyzer.py
+│   │   └── ai_analyzer.py
 │   ├── managers/          # External service managers
 │   │   └── trello_manager.py
 │   ├── utils/             # Utility functions

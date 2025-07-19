@@ -89,7 +89,11 @@ class GitHubAnalyzer:
         """Get content of a specific file from the repository."""
         try:
             content = repo.get_contents(path)
-            if isinstance(content, ContentFile):
+            # Handle both single file and list of files
+            if isinstance(content, list):
+                # If it's a list, return None (directory)
+                return None
+            elif hasattr(content, 'content'):
                 # Decode content from base64
                 return base64.b64decode(content.content).decode('utf-8')
             return None

@@ -6,6 +6,7 @@ This script tests the core functionality directly without going through the MCP 
 
 import os
 import asyncio
+import base64
 from dotenv import load_dotenv
 import sys
 import os
@@ -13,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from analyzers.github_analyzer import GitHubAnalyzer
 from managers.trello_manager import TrelloManager
-from analyzers.code_analyzer import CodeAnalyzer
+from analyzers.ai_analyzer import AIAnalyzer
 
 # Load environment variables
 load_dotenv()
@@ -133,16 +134,23 @@ async def test_trello_integration():
         print(f"❌ Trello integration error: {e}")
         return False
 
-async def test_code_analysis():
-    """Test code analysis functionality."""
-    print("\n🔍 Testing Code Analysis")
+async def test_ai_analysis():
+    """Test AI analysis functionality."""
+    print("\n🤖 Testing AI Analysis")
     print("=" * 40)
     
     try:
-        analyzer = CodeAnalyzer()
+        ai_analyzer = AIAnalyzer(
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")
+        )
         
         # Test with sample code
-        sample_code = """
+        sample_files = [
+            {
+                'path': 'test.py',
+                'language': 'python',
+                'code': '''
 # Sample Python file with issues
 import os
 import sys
@@ -159,23 +167,37 @@ def main():
             pass
     
     eval("print('dangerous')")  # Security issue
-"""
+'''
+            }
+        ]
         
-        analysis = analyzer.analyze_file_content(sample_code, "test.py")
+        # Create a mock repository object for testing
+        class MockRepo:
+            def get_contents(self, path):
+                class MockContent:
+                    def __init__(self, content):
+                        self.content = base64.b64encode(content.encode()).decode()
+                return MockContent(sample_files[0]['code'])
         
-        print("✅ Code analysis completed!")
-        print(f"   Issues found: {len(analysis.get('issues', []))}")
-        print(f"   Suggestions: {len(analysis.get('suggestions', []))}")
+        mock_repo = MockRepo()
+        analysis = ai_analyzer.analyze_repository_with_ai(mock_repo, sample_files)
         
-        if analysis.get("issues"):
+        print("✅ AI analysis completed!")
+        print(f"   Issues found: {len(analysis.issues)}")
+        print(f"   Suggestions: {len(analysis.suggestions)}")
+        print(f"   Code Quality Score: {analysis.code_quality_score}/100")
+        print(f"   Security Score: {analysis.security_score}/100")
+        print(f"   Maintainability Score: {analysis.maintainability_score}/100")
+        
+        if analysis.issues:
             print("   Sample issues:")
-            for issue in analysis["issues"][:2]:  # Show first 2 issues
+            for issue in analysis.issues[:2]:  # Show first 2 issues
                 print(f"     - {issue.get('title', 'Unknown')} ({issue.get('severity', 'Unknown')})")
         
         return True
         
     except Exception as e:
-        print(f"❌ Code analysis error: {e}")
+        print(f"❌ AI analysis error: {e}")
         return False
 
 async def test_full_workflow():
@@ -196,7 +218,10 @@ async def test_full_workflow():
         # Initialize components
         github_analyzer = GitHubAnalyzer(github_token)
         trello_manager = TrelloManager(trello_api_key, trello_token, trello_board_id)
-        code_analyzer = CodeAnalyzer()
+        ai_analyzer = AIAnalyzer(
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")
+        )
         
         # Get repository
         print("📊 Getting repository...")
@@ -212,13 +237,25 @@ async def test_full_workflow():
         print("🔍 Analyzing repository...")
         structure = github_analyzer.analyze_repository_structure(repo)
         code_quality = github_analyzer.analyze_code_quality(repo)
-        code_analysis = code_analyzer.analyze_repository_files(repo, max_files=10)  # Limit for testing
+        
+        # Perform AI analysis
+        print("🤖 Performing AI analysis...")
+        sample_files = []
+        contents = repo.get_contents("")
+        for content in contents[:5]:  # Limit to 5 files for testing
+            if hasattr(content, 'content'):
+                sample_files.append({
+                    'path': content.path,
+                    'language': content.name.split('.')[-1] if '.' in content.name else 'unknown'
+                })
+        
+        ai_analysis = ai_analyzer.analyze_repository_with_ai(repo, sample_files)
         
         # Combine analysis
         combined_analysis = {
-            "issues": code_quality.get("issues", []) + code_analysis.get("issues", []),
-            "suggestions": code_quality.get("suggestions", []) + code_analysis.get("suggestions", []),
-            "score": code_quality.get("score", 100)
+            "issues": code_quality.get("issues", []) + ai_analysis.issues,
+            "suggestions": code_quality.get("suggestions", []) + ai_analysis.suggestions,
+            "score": (code_quality.get("score", 100) + ai_analysis.code_quality_score) // 2
         }
         
         print(f"✅ Analysis completed! Score: {combined_analysis['score']}/100")
@@ -250,7 +287,7 @@ async def main():
     # Test individual components
     results["github"] = await test_github_integration()
     results["trello"] = await test_trello_integration()
-    results["code_analysis"] = await test_code_analysis()
+    results["ai_analysis"] = await test_ai_analysis()
     
     # Test full workflow
     results["full_workflow"] = await test_full_workflow()

@@ -27,7 +27,7 @@ from mcp.types import (
 
 from .analyzers.github_analyzer import GitHubAnalyzer
 from .managers.trello_manager import TrelloManager
-from .analyzers.code_analyzer import CodeAnalyzer
+from .analyzers.ai_analyzer import AIAnalyzer
 
 # Load environment variables
 load_dotenv()
@@ -41,7 +41,10 @@ trello_board_id = os.getenv("TRELLO_BOARD_ID")
 # Initialize analyzers and managers
 github_analyzer = None
 trello_manager = None
-code_analyzer = CodeAnalyzer()
+ai_analyzer = AIAnalyzer(
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")
+)
 
 if github_token:
     github_analyzer = GitHubAnalyzer(github_token)
@@ -213,17 +216,26 @@ async def analyze_repository(arguments: Dict[str, Any]) -> CallToolResult:
         # Analyze code quality
         code_quality = github_analyzer.analyze_code_quality(repo)
         
-        # Perform detailed code analysis
-        code_analysis = code_analyzer.analyze_repository_files(repo, max_files)
+        # Perform AI-powered code analysis
+        sample_files = []
+        contents = repo.get_contents("")
+        for content in contents[:max_files]:
+            if hasattr(content, 'content'):
+                sample_files.append({
+                    'path': content.path,
+                    'language': content.name.split('.')[-1] if '.' in content.name else 'unknown'
+                })
+        
+        ai_analysis = ai_analyzer.analyze_repository_with_ai(repo, sample_files)
         
         # Get recent issues
         recent_issues = github_analyzer.get_recent_issues(repo, limit=10)
         
         # Combine all analysis results
         combined_analysis = {
-            "issues": code_quality.get("issues", []) + code_analysis.get("issues", []),
-            "suggestions": code_quality.get("suggestions", []) + code_analysis.get("suggestions", []),
-            "score": code_quality.get("score", 100)
+            "issues": code_quality.get("issues", []) + ai_analysis.issues,
+            "suggestions": code_quality.get("suggestions", []) + ai_analysis.suggestions,
+            "score": (code_quality.get("score", 100) + ai_analysis.code_quality_score) // 2
         }
         
         # Create Trello tasks if requested
